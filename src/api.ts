@@ -1,20 +1,20 @@
+import { getSessionCookie } from "./auth.js";
 import type { Offer, OffersResponse } from "./types.js";
 
 const BASE_URL = "https://shopping.yettel.rs/api";
 const DEFAULT_LIMIT = 50;
 
-const SESSION_COOKIE = process.env.YETTEL_SESSION_COOKIE ?? "";
 const SERVER_ID = process.env.YETTEL_SERVER_ID ?? "partner_be1";
 const DEVICE_ID = process.env.YETTEL_DEVICE_ID ?? "";
 const ACCOUNT_USER = process.env.YETTEL_ACCOUNT_USER ?? "";
 
-if (!SESSION_COOKIE || !DEVICE_ID || !ACCOUNT_USER) {
-  throw new Error("Missing required Yettel environment variables (YETTEL_SESSION_COOKIE, YETTEL_DEVICE_ID, YETTEL_ACCOUNT_USER)");
+if (!DEVICE_ID || !ACCOUNT_USER) {
+  throw new Error("Missing required Yettel environment variables (YETTEL_DEVICE_ID, YETTEL_ACCOUNT_USER)");
 }
 
 function getCookieString(): string {
   return [
-    `yshc.connect.sid=${SESSION_COOKIE}`,
+    `yshc.connect.sid=${getSessionCookie()}`,
     `SERVERID=${SERVER_ID}`,
     `device_identifier=${DEVICE_ID}`,
     `account-logged-in-user=${ACCOUNT_USER}`,
@@ -34,7 +34,7 @@ function getHeaders(): Record<string, string> {
 }
 
 export async function fetchOffers(limit = DEFAULT_LIMIT, offset = 0): Promise<OffersResponse> {
-  const url = `${BASE_URL}/offers?limit=${limit}&offset=${offset}`;
+  const url = `${BASE_URL}/offers?limit=${limit}&offset=${offset}&is_advantage=0`;
   const response = await fetch(url, { headers: getHeaders() });
 
   if (!response.ok) {
@@ -80,6 +80,7 @@ export async function claimOffer(offerId: string, partnerCategory: string): Prom
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to claim offer ${offerId}: ${response.status} ${response.statusText}`);
+    const text = await response.text();
+    throw new Error(`Failed to claim offer ${offerId}: ${response.status} - ${text}`);
   }
 }
