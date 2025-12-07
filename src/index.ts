@@ -56,8 +56,13 @@ async function runScraper(): Promise<void> {
       await sendTelegramMessage(`✅ ${offer.name}`);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      console.error(`✗ ${offer.name}: ${errMsg}`);
-      await sendTelegramMessage(`❌ ${offer.name}\n${errMsg}`);
+      if (errMsg.includes("10204")) {
+        await saveCoupon(offer.id, offer.name, offer.partner_name);
+        console.log(`⊘ ${offer.name} (already claimed)`);
+      } else {
+        console.error(`✗ ${offer.name}: ${errMsg}`);
+        await sendTelegramMessage(`❌ ${offer.name}\n${errMsg}`);
+      }
     }
     await randomDelay(3, 6);
   }
