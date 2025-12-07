@@ -63,6 +63,18 @@ export function filterUnclaimedOffers(offers: Offer[]): Offer[] {
   return offers.filter((offer) => !offer.code);
 }
 
+export async function fetchClaimedCount(): Promise<number> {
+  const url = `${BASE_URL}/offer-codes/count`;
+  const response = await fetch(url, { headers: getHeaders() });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch claimed count: ${response.status}`);
+  }
+
+  const data = await response.json() as { data: { codeCount: number } };
+  return data.data.codeCount;
+}
+
 export async function claimOffer(offerId: string, partnerCategory: string): Promise<void> {
   const url = `${BASE_URL}/offers/${offerId}/code`;
   const body = {

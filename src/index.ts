@@ -1,8 +1,13 @@
 import "dotenv/config";
 
-import { claimOffer, fetchAllOffers, filterUnclaimedOffers } from "./api.js";
+import {
+  claimOffer,
+  fetchAllOffers,
+  fetchClaimedCount,
+  filterUnclaimedOffers,
+} from "./api.js";
 import { initSession, refreshSession } from "./auth.js";
-import { getClaimedOfferIds, getSuccessfulClaimCount, saveCoupon } from "./db.js";
+import { getClaimedOfferIds, saveCoupon } from "./db.js";
 import { sendTelegramMessage } from "./telegram.js";
 import { delay, randomDelay } from "./utils.js";
 
@@ -24,13 +29,15 @@ async function runScraper(): Promise<void> {
     (offer) => !claimedIds.has(offer.id)
   );
 
-  console.log(`📊 New: ${unclaimedOffers.length} | Already claimed: ${claimedIds.size} | Total: ${offers.length}`);
+  console.log(
+    `📊 New: ${unclaimedOffers.length} | Already claimed: ${claimedIds.size} | Total: ${offers.length}`
+  );
   authFailures = 0;
 
   if (unclaimedOffers.length === 0) {
     runsSinceLastHeartbeat++;
     if (runsSinceLastHeartbeat >= HEARTBEAT_INTERVAL) {
-      const claimCount = await getSuccessfulClaimCount();
+      const claimCount = await fetchClaimedCount();
       const msg = `💚 ${USERNAME} | ${claimCount} coupons claimed`;
       console.log(msg);
       await sendTelegramMessage(msg);
@@ -49,16 +56,8 @@ async function runScraper(): Promise<void> {
       await sendTelegramMessage(`✅ ${offer.name}`);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("10204")) {
-        await saveCoupon(offer.id, offer.name, offer.partner_name, "already_claimed");
-        console.log(`⊘ ${offer.name} (already claimed)`);
-      } else if (errMsg.includes("10206")) {
-        await saveCoupon(offer.id, offer.name, offer.partner_name, "not_eligible");
-        console.log(`⊘ ${offer.name} (not eligible)`);
-      } else {
-        console.error(`✗ ${offer.name}: ${errMsg}`);
-        await sendTelegramMessage(`❌ ${offer.name}\n${errMsg}`);
-      }
+      console.error(`✗ ${offer.name}: ${errMsg}`);
+      await sendTelegramMessage(`❌ ${offer.name}\n${errMsg}`);
     }
     await randomDelay(3, 6);
   }
