@@ -7,7 +7,7 @@ import { sendTelegramMessage } from "./telegram.js";
 import { delay, randomDelay } from "./utils.js";
 
 const USERNAME = process.env.USERNAME ?? "";
-const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED !== "false";
+const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED === "true";
 const RETRY_DELAY_SECONDS = 120;
 const HEARTBEAT_INTERVAL = 15;
 
